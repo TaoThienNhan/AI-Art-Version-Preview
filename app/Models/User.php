@@ -3,14 +3,19 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Core\Enums\Status;
+use App\Core\Enums\Verified;
+use BezhanSalleh\FilamentShield\Traits\HasPanelShield;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable;
+    use HasApiTokens, HasFactory, Notifiable, HasRoles, HasPanelShield;
 
     /**
      * The attributes that are mass assignable.
@@ -21,6 +26,11 @@ class User extends Authenticatable
         'name',
         'email',
         'password',
+        'avatar',
+        'slug',
+        'verified',
+        'phone',
+        'status'
     ];
 
     /**
@@ -41,5 +51,25 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'password' => 'hashed',
+        'status' => Status::class,
+        'verified' => Verified::class
     ];
+
+    /**
+     * @param Panel $panel
+     * @return bool
+     */
+    public function canAccessPanel(Panel $panel): bool
+    {
+        if ($panel->getId() === 'admin') {
+            return $this->hasAnyRole([
+                'super_admin',
+                'admin',
+                'blogger',
+                'moderator'
+            ]);
+        }
+
+        return TRUE;
+    }
 }
